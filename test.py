@@ -22,7 +22,7 @@ CSV_FILE_PATH = 'imdb_top_1000.csv'
 @cross_origin()
 def random_movies():
     df = pd.read_csv(CSV_FILE_PATH)
-    df = df.where(pd.notnull(df), None)  # Replace NaN with None
+    df = df.where(pd.notnull(df), None) 
     random_movies = df.sample(5).to_dict(orient='records')
     return jsonify(random_movies)
 
