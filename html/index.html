@@ -3,16 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Movie Guru - Recomendações de Filmes</title>
+<title>Movie Guru</title>
+<link rel="icon" type="image/png" href="../images/favicon.jpeg">
 <style>
   body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #121212;
+    background-color: #000000;
     color: #fff;
   }
   .header {
-    background-color: #1C1C1C;
+      /* Make sure your header is a flex container if it's not already */
+      display: flex;
+      align-items: center; /* Aligns items vertically center */
+      justify-content: space-between; /* Spreads the child elements out */
+      /* ... other styles ... */
+    }
+
+  .logo {
+    height: 50px; /* You can adjust this as needed */
+    margin-right: 20px; /* Add some space to the right of the logo */
+  }
+
+  /* New style for the centered text */
+  .special-recommendations {
+    text-align: center;
+    margin: 20px 0; /* Add some vertical margin */
+    font-size: 1.5em; /* Make the font larger, adjust as needed */
+    /* Add additional styling as required */
+  }
+  .header {
+    background-color: #000000;
     padding: 20px;
     text-align: center;
   }
@@ -42,7 +63,7 @@
     margin-top: 8px;
   }
   .footer {
-    background-color: #1C1C1C;
+    background-color: #000000;
     padding: 20px;
     text-align: center;
   }
@@ -63,10 +84,15 @@
 </head>
 <body>
 
-<div class="header">
-  <h1>MOVIE GURU</h1>
-  <p>Indicações especiais para você</p>
-</div>
+  <div class="header">
+    <img src="../images/logo.jpeg" alt="Movie Guru Logo" class="logo">
+    <!-- ... other header content ... -->
+  </div>
+
+  <!-- Separate div for the centered text -->
+  <div class="special-recommendations">
+    Indicações especiais para você
+  </div>
 
 <div class="movie-grid">
   <!-- Empty movie containers where the posters will be displayed by JS -->
