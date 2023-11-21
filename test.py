@@ -1,30 +1,31 @@
-import requests
-from bs4 import BeautifulSoup
-import imdb
+from flask import Flask, jsonify
+import pandas as pd
+from flask_cors import CORS, cross_origin
+import random
 
-# Create an instance of the IMDb class
-ia = imdb.IMDb()
+app = Flask(__name__)
+CORS(app)
 
-def get_movie_names():
-    movie_names = []
+# Assuming the CSV file is in the same directory as the script
+CSV_FILE_PATH = 'imdb_top_1000.csv'
 
-    top_250 = ia.get_top250_movies()
-    print(top_250)
+# @app.route('/random-movies')
+# def random_movies():
+#     movies_dict = {}
+#     df = pd.read_csv(CSV_FILE_PATH)
+#     random_movies = df.sample(5).to_dict(orient='records')
+#     for i in range(5):
+#         movies_dict[i] = random_movies[i]['Series_Title'], random_movies[i]['id'], random_movies[i]['Poster_Link']
+#     return jsonify(movies_dict)
 
-    return movie_names
+@app.route('/random-movies')
+@cross_origin()
+def random_movies():
+    df = pd.read_csv(CSV_FILE_PATH)
+    df = df.where(pd.notnull(df), None)  # Replace NaN with None
+    random_movies = df.sample(5).to_dict(orient='records')
+    return jsonify(random_movies)
+
 
 if __name__ == '__main__':
-    ia = imdb.IMDb()
-    top = ia.get_top250_movies()
-    for i in top:
-        print(top['title'])
-
-    # movie_names = get_movie_names()
-
-    # if movie_names:
-    #     # print("Movie Names:")
-    #     # for name in movie_names:
-    #     #     print(name)
-    #     print(len(movie_names))
-    # else:
-    #     print("No movie names to display.")
+    app.run(debug=True)
