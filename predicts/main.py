@@ -1,56 +1,41 @@
-import requests
-import csv
-import os
+from flask import Flask, jsonify, request
+import pandas as pd
+from recommender import MovieRecommender
 
-# Replace 'YOUR_API_KEY' with your actual API key (if required by the API)
-API_KEY = 'e35c7f6c'
-BASE_URL = 'http://www.omdbapi.com/'
+from flask import Flask
+from flask_cors import CORS
 
-def get_movie_data(title):
-    params = {'apikey': API_KEY, 't': title}
-    response = requests.get(BASE_URL, params=params)
-    data = response.json()
-    return data
+app = Flask(__name__)
+CORS(app)
 
-def create_dataset(movie_titles):
-    dataset = []
+# Load your DataFrame just once when the server starts
+df = pd.read_csv('/home/thiagomedinad/vscode/p-movie/predicts/top_movies.csv')
+recommender = MovieRecommender(df)
+recommender.vectorize()
+recommender.calculate_similarity()
+recommender.build_indices()
 
-    for title in movie_titles:
-        movie_data = get_movie_data(title)
-
-        if movie_data.get('Response') == 'True':
-            dataset.append({
-                'Title': movie_data.get('Title', ''),
-                'Year': movie_data.get('Year', ''),
-                'Genre': movie_data.get('Genre', ''),
-                'Director': movie_data.get('Director', ''),
-                'imdbRating': movie_data.get('imdbRating', '')
-            })
-        else:
-            print(f"Failed to fetch data for '{title}': {movie_data.get('Error', 'Unknown error')}")
-
-    return dataset
-
-def save_to_csv(dataset, filename='movie_dataset.csv'):
-    fields = ['Title', 'Year', 'Genre', 'Director', 'imdbRating']
-
-    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-        csvwriter = csv.DictWriter(csvfile, fieldnames=fields)
-        
-        # Write the header
-        csvwriter.writeheader()
-
-        # Write the data
-        csvwriter.writerows(dataset)
+# Define a route to get movie recommendations
+@app.route('/recommend', methods=['GET'])
+def get_recommendations():
+    # Get movie title from the query string
+    title = request.args.get('title', default='', type=str)
+    
+    # Get number of recommendations from the query string, default is 10
+    num_recommendations = request.args.get('num', default=10, type=int)
+    
+    if title:
+        try:
+            # Use the recommender to get recommendations
+            recommendations = recommender.recommend(title, num_recommendations)
+            return jsonify({'recommendation': recommendations})
+        except KeyError:
+            # If the title does not exist in the dataset
+            return jsonify({'error': 'Movie title not found in the dataset'}), 404
+    else:
+        # If no title is provided in the query string
+        return jsonify({'error': 'No movie title provided'}), 400
 
 if __name__ == '__main__':
-    # Replace 'Your_Movie_Titles' with a list of movie titles you want to fetch
-    movie_titles = ['Inception', 'The Dark Knight', 'The Shawshank Redemption', 'Pulp Fiction']
-    
-    movie_dataset = create_dataset(movie_titles)
-    
-    if movie_dataset:
-        save_to_csv(movie_dataset)
-        print("Dataset created and saved to 'movie_dataset.csv'")
-    else:
-        print("No valid movie data to save.")
+    # Start the Flask server
+    app.run(debug=True)

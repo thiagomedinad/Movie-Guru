@@ -115,15 +115,68 @@
 
 <script>
 
-// JavaScript function to fetch random movies and display them
-async function fetchRandomMovies() {
-  const clickedMovieNames = [];
-  try {
-    const response = await fetch('http://localhost:3000/random-movies');
-    const movies = await response.json();
+// async function fetchRecommendedMovie() {
+//   try {
+//     const response = await fetch('http://localhost:5000/recommend');
+//     const data = await response.json();
+//     const recommended_movie = data.recommendation;
+//     const recommended_poster = await getMoviePoster(recommended_movie);
 
-    const posterPromises = movies.map(movie => getMoviePoster(movie.Series_Title));
-    const posters = await Promise.all(posterPromises);
+//     // Assuming the response will have the recommended movie data
+//     const recommendedMovieDiv = document.createElement('div');
+//     recommendedMovieDiv.className = 'movie-container';
+//     recommendedMovieDiv.innerHTML = `
+//       <img src="${recommended_poster}" alt="${movie.Series_Title} Poster" class="clickable-image">
+//       <p class="movie-title">${movie.Series_Title} (${movie.Released_Year})</p>
+//     `;
+
+//     // Clear the movie grid and append the recommended movie
+//     const movieGrid = document.querySelector('.movie-grid');
+//     movieGrid.innerHTML = '';
+//     movieGrid.appendChild(recommendedMovieDiv);
+//   } catch (error) {
+//     console.error('Error fetching the recommended movie:', error);
+//   }
+// }
+
+// JavaScript function to fetch random movies and display them
+let recommended_movies = [];
+let clickCount = 0;
+
+async function fetchRandomMovies() {
+  const response = await fetch('http://localhost:3000/random-movies');
+  const movies = await response.json();
+
+  const posterPromises = movies.map(movie => getMoviePoster(movie.Series_Title));
+  const posters = await Promise.all(posterPromises);
+
+  return { movies, posters };
+}
+
+async function updateMovieGrid() {
+  const movieGrid = document.querySelector('.movie-grid');
+  movieGrid.innerHTML = ''; // Clear the movie grid
+
+  // Loop through the recommended_movies array and create new divs
+  recommended_movies.forEach(movie => {
+    const newMovieDiv = document.createElement('div');
+    newMovieDiv.innerHTML = `
+      <img src="${movie.poster}" alt="${movie.title} Poster" class="movie-poster">
+      <p class="movie-title">${movie.title} (${movie.year})</p>
+    `;
+
+    // Append the new div to the movie grid
+    movieGrid.appendChild(newMovieDiv);
+  });
+
+  // Reset the counter and the recommended_movies array after changing the content
+  clickCount = 0;
+  recommended_movies = [];
+}
+
+async function main() {
+  try {
+    const { movies, posters } = await fetchRandomMovies()
 
     // Clear existing content and remove previous event listeners
     for (let i = 1; i <= 5; i++) {
@@ -148,24 +201,55 @@ async function fetchRandomMovies() {
         `;
 
         // Add an onclick event listener directly to the movieDiv
-        movieDiv.addEventListener('click', () => {
+        movieDiv.addEventListener('click', async () => {
+          clickCount++;
           // Store the name of the movie in a constant
           const movieName = movie.Series_Title;
-          // Add the movie name to the global array
-          clickedMovieNames.push(movieName);
-          console.log(clickedMovieNames); // Log the global array to see the clicked movie names
+          console.log(movieName)
+          try {
+            const response = await fetch(`http://localhost:5000/recommend?title=${movieName}`);
+            const data = await response.json();
+            const recommended_movie = data.recommendation;
 
-          // Instead of opening a new window, just call fetchRandomMovies again
-          fetchRandomMovies();
+            // Add the recommended movie to the global array
+            recommended_movies.push(recommended_movie);
+            console.log(recommended_movies); // Log the global array to see the recommended movie names
+
+            // Instead of opening a new window, just call fetchRandomMovies again
+            main();
+
+            if (clickCount === 3) {
+              // User has clicked three times, change the content of movie-grid
+              const movieGrid = document.querySelector('.movie-grid');
+              movieGrid.innerHTML = ''; // Clear the movie grid
+
+              // Loop through the recommended_movies array and create new divs
+              recommended_movies.forEach(movie => {
+                const newMovieDiv = document.createElement('div');
+                // Assuming the movie object has a title and a year, adjust as necessary
+                newMovieDiv.innerHTML = `
+                  <img src="${movie.poster}" alt="${movie.title} Poster" class="movie-poster">
+                  <p class="movie-title">${movie.title} (${movie.year})</p>
+                `;
+
+                // Append the new div to the movie grid
+                movieGrid.appendChild(newMovieDiv);
+              });
+
+              // Reset the counter and the recommended_movies array after changing the content
+              clickCount = 0;
+              recommended_movies = [];
+            }
+          } catch (error) {
+            console.error('Error fetching recommendations:', error);
+          }
         });
       }
     });
-
   } catch (error) {
     console.error('Error fetching random movies:', error);
   }
 }
-
 
 function getMoviePoster(movieTitle) {
   const apiKey = 'e35c7f6c'; // Replace with your actual API key
@@ -183,8 +267,9 @@ function getMoviePoster(movieTitle) {
     });
 }
 
+
 // Initialize the random movies on window load
-window.onload = fetchRandomMovies;
+window.onload = main;
 </script>
 
 </body>
