@@ -144,6 +144,16 @@ let recommended_movies = [];
 let clickCount = 0;
 
 async function fetchRandomMovies() {
+  if (clickCount >= 3) {
+    displayRecommendedMovies();
+    return;
+  }
+
+  const { movies, posters } = await fetchRandomMoviesData();
+  populateMovies(movies, posters);
+}
+
+async function fetchRandomMoviesData() {
   const response = await fetch('http://localhost:3000/random-movies');
   const movies = await response.json();
 
@@ -153,123 +163,80 @@ async function fetchRandomMovies() {
   return { movies, posters };
 }
 
-async function updateMovieGrid() {
-  const movieGrid = document.querySelector('.movie-grid');
-  movieGrid.innerHTML = ''; // Clear the movie grid
+async function populateMovies(movies, posters) {
+  for (let i = 1; i <= 5; i++) {
+    const movieDiv = document.getElementById(`moviePoster${i}`);
+    movieDiv.innerHTML = ''; // Clear the movie container
+    movieDiv.removeEventListener('click', movieClickListener); // Remove previous listener
+  }
 
-  // Loop through the recommended_movies array and create new divs
-  recommended_movies.forEach(movie => {
-    const newMovieDiv = document.createElement('div');
-    newMovieDiv.innerHTML = `
-      <img src="${movie.poster}" alt="${movie.title} Poster" class="movie-poster">
-      <p class="movie-title">${movie.title} (${movie.year})</p>
-    `;
+  posters.forEach((poster, index) => {
+    const movie = movies[index];
+    const movieDiv = document.getElementById(`moviePoster${index + 1}`);
+    if (movieDiv && poster) {
+      movieDiv.innerHTML = `
+        <img src="${poster}" alt="${movie.Series_Title} Poster" class="clickable-image">
+        <p class="movie-title">${movie.Series_Title} (${movie.Released_Year})</p>
+      `;
 
-    // Append the new div to the movie grid
-    movieGrid.appendChild(newMovieDiv);
+      movieDiv.movieTitle = movie.Series_Title; // Attach title to the element
+      movieDiv.addEventListener('click', movieClickListener);
+    }
   });
+}
 
-  // Reset the counter and the recommended_movies array after changing the content
+async function movieClickListener() {
+  clickCount++;
+  const movieName = this.movieTitle; // Use the attached title
+  console.log(movieName);
+  recommended_movies.append(movieName);
+  await updateMovieDisplay(movieName);
+}
+
+async function updateMovieDisplay(movieName) {
+  if (clickCount < 3) {
+    const { movies, posters } = await fetchRandomMoviesData();
+    populateMovies(movies, posters);
+  } else {
+    await displayRecommendedMovies();
+  }
+}
+
+async function displayRecommendedMovies() {
+  const movieGrid = document.querySelector('.movie-grid');
+  movieGrid.innerHTML = '';
+
+  for (let movie of recommended_movies) {
+    const newMovieDiv = document.createElement('div');
+    newMovieDiv.className = 'movie-container';
+    const recommended_poster = await getMoviePoster(movie);
+    newMovieDiv.innerHTML = `
+      <img src="${recommended_poster}" alt="${movie} Poster" class="clickable-image">
+      <p class="movie-title">${movie}</p>
+    `;
+    movieGrid.appendChild(newMovieDiv);
+  }
+
   clickCount = 0;
   recommended_movies = [];
 }
 
-async function main() {
-  try {
-    const { movies, posters } = await fetchRandomMovies()
-
-    // Clear existing content and remove previous event listeners
-    for (let i = 1; i <= 5; i++) {
-      const movieDiv = document.getElementById(`moviePoster${i}`);
-      if (movieDiv) {
-        movieDiv.innerHTML = ''; // Clear the movie container
-        // Remove any previous onclick event listeners to avoid duplicates
-        movieDiv.onclick = null;
-      }
-    }
-
-    // Populate with new content and add event listeners
-    // Populate with new content and add event listeners
-    posters.forEach((poster, index) => {
-      const movie = movies[index];
-      const movieDiv = document.getElementById(`moviePoster${index + 1}`);
-      if (movieDiv && poster) {
-        // Instead of wrapping with an <a> tag, just place the <img> directly
-        movieDiv.innerHTML = `
-          <img src="${poster}" alt="${movie.Series_Title} Poster" class="clickable-image">
-          <p class="movie-title">${movie.Series_Title} (${movie.Released_Year})</p>
-        `;
-
-        // Add an onclick event listener directly to the movieDiv
-        movieDiv.addEventListener('click', async () => {
-          clickCount++;
-          // Store the name of the movie in a constant
-          const movieName = movie.Series_Title;
-          console.log(movieName)
-          try {
-            const response = await fetch(`http://localhost:5000/recommend?title=${movieName}`);
-            const data = await response.json();
-            const recommended_movie = data.recommendation;
-
-            // Add the recommended movie to the global array
-            recommended_movies.push(recommended_movie);
-            console.log(recommended_movies); // Log the global array to see the recommended movie names
-
-            // Instead of opening a new window, just call fetchRandomMovies again
-            main();
-
-            if (clickCount === 3) {
-              // User has clicked three times, change the content of movie-grid
-              const movieGrid = document.querySelector('.movie-grid');
-              movieGrid.innerHTML = ''; // Clear the movie grid
-
-              // Loop through the recommended_movies array and create new divs
-              recommended_movies.forEach(movie => {
-                const newMovieDiv = document.createElement('div');
-                // Assuming the movie object has a title and a year, adjust as necessary
-                newMovieDiv.innerHTML = `
-                  <img src="${movie.poster}" alt="${movie.title} Poster" class="movie-poster">
-                  <p class="movie-title">${movie.title} (${movie.year})</p>
-                `;
-
-                // Append the new div to the movie grid
-                movieGrid.appendChild(newMovieDiv);
-              });
-
-              // Reset the counter and the recommended_movies array after changing the content
-              clickCount = 0;
-              recommended_movies = [];
-            }
-          } catch (error) {
-            console.error('Error fetching recommendations:', error);
-          }
-        });
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching random movies:', error);
-  }
-}
-
 function getMoviePoster(movieTitle) {
-  const apiKey = 'e35c7f6c'; // Replace with your actual API key
+  const apiKey = 'e35c7f6c';
   const apiUrl = `http://www.omdbapi.com/?apikey=${apiKey}&t=${movieTitle}`;
 
-  // Return the fetch promise
   return fetch(apiUrl)
     .then(response => response.json())
     .then(data => {
-      return data.Poster; // This will be a string with the URL of the poster.
+      return data.Poster;
     })
     .catch(error => {
       console.error('Error fetching movie poster:', error);
-      return ''; // Return a default/fallback URL or an empty string if there's an error.
+      return '';
     });
 }
 
-
-// Initialize the random movies on window load
-window.onload = main;
+window.onload = fetchRandomMovies;
 </script>
 
 </body>
