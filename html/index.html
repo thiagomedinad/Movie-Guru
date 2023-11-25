@@ -86,6 +86,9 @@
   .clickable-image {
     cursor: pointer;
   }
+  .hidden {
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -110,7 +113,7 @@
 </div>
 
 <div class="footer">
-  <button class="recommend-button" onclick="fetchRandomMovies()">Novas opções</button>
+  <!-- <button class="recommend-button" onclick="fetchRandomMovies()">Novas opções</button> -->
 </div>
 
 <script>
@@ -188,8 +191,15 @@ async function populateMovies(movies, posters) {
 async function movieClickListener() {
   clickCount++;
   const movieName = this.movieTitle; // Use the attached title
-  console.log(movieName);
-  recommended_movies.append(movieName);
+
+  const response = await fetch(`http://localhost:5000/recommend?title=${movieName}`);
+  const data = await response.json();
+  const recommended_movie = data.recommendation;
+
+  // Add the recommended movie to the global array
+  recommended_movies.push(recommended_movie);
+  console.log(recommended_movies); 
+
   await updateMovieDisplay(movieName);
 }
 
@@ -204,7 +214,9 @@ async function updateMovieDisplay(movieName) {
 
 async function displayRecommendedMovies() {
   const movieGrid = document.querySelector('.movie-grid');
+  const footer = document.querySelector('.footer');
   movieGrid.innerHTML = '';
+  footer.innerHTML = '';
 
   for (let movie of recommended_movies) {
     const newMovieDiv = document.createElement('div');
@@ -216,6 +228,9 @@ async function displayRecommendedMovies() {
     `;
     movieGrid.appendChild(newMovieDiv);
   }
+
+  const specialRecommendationsDiv = document.querySelector('.special-recommendations');
+  specialRecommendationsDiv.textContent = 'CERTEZA QUE VOCÊ VAI GOSTAR DESSES TRÊS FILMES! PODE CONFIAR NO SEU GURU';
 
   clickCount = 0;
   recommended_movies = [];
@@ -236,7 +251,19 @@ function getMoviePoster(movieTitle) {
     });
 }
 
-window.onload = fetchRandomMovies;
+function createRecommendButton() {
+  const footer = document.querySelector('.footer');
+  const button = document.createElement('button');
+  button.className = 'recommend-button';
+  button.textContent = 'Novas opções';
+  button.onclick = fetchRandomMovies;
+  footer.appendChild(button);
+}
+
+window.onload = function() {
+  fetchRandomMovies();
+  createRecommendButton(); // This will create the button when the page loads
+};
 </script>
 
 </body>
