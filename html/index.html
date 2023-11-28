@@ -157,7 +157,7 @@ async function fetchRandomMovies() {
 }
 
 async function fetchRandomMoviesData() {
-  const response = await fetch('http://thi.sof-town.tech/random-movies');
+  const response = await fetch('http://localhost:3000/random-movies');
   const movies = await response.json();
 
   const posterPromises = movies.map(movie => getMoviePoster(movie.Series_Title));
