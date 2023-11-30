@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Load your DataFrame just once when the server starts
-df = pd.read_csv('/home/thiagomedinad/vscode/p-movie/predicts/top_movies.csv')
+df = pd.read_csv('./top_movies.csv')
 recommender = MovieRecommender(df)
 recommender.vectorize()
 recommender.calculate_similarity()
