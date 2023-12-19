@@ -14,7 +14,6 @@ app.get('/random-movies', (req, res) => {
     header: true,
     complete: (results) => {
       let movies = results.data;
-      // Replace null values with null (to mirror df.where(pd.notnull(df), None))
       movies = movies.map((movie) => {
         for (let key in movie) {
           if (movie[key] === '' || movie[key] === 'N/A') {
@@ -23,7 +22,6 @@ app.get('/random-movies', (req, res) => {
         }
         return movie;
       });
-      // Select 5 random movies
       const randomMovies = [];
       for (let i = 0; i < 5; i++) {
         const randomIndex = Math.floor(Math.random() * movies.length);
